@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打地鼠游戏</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+        .hole {
+            width: 70px;
+            height: 70px;
+            background-color: rgb(7, 46, 65);
+            border: 1px solid rgb(233, 222, 222);
+            border-radius: 50%; /* 改为圆形 */
+            display: inline-block; /* 改为内联块级元素，以便水平排列 */
+            margin: 10px; /* 添加间距 */
+            position: relative;
+            overflow: hidden; /* 确保地鼠不会超出洞的边界 */
+        }
+        #game-area {
+            text-align: center; /* 居中对齐 */
+        }
+        .hole-row {
+            display: flex; /* 使用 flex 布局 */
+            justify-content: center; /* 水平居中 */
+        }
+        #status-bar {
+            text-align: center; /* 居中对齐 */
+            margin-top: 20px; /* 顶部间距 */
+            display: flex; /* 使用 flex 布局 */
+            justify-content: space-between; /* 均匀分布内容 */
+        }
+        #status-bar div {
+            margin: 0 10px; /* 调整间距 */
+        }
+        #start-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        #time {
+            color: red;
+        }
+        #game-over {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .mole {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background-image: url("bee.svg"); /* 确保路径正确 */
+            background-size: cover;
+            display: none; /* 初始隐藏地鼠 */
+        }
+        #reset-btn-container {
+            margin-top: 20px;
+        }
+        #developer-btn {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="status-bar">
+        <div id="time">时间：00:00</div>
+        <div id="health">生命值：100</div>
+        <div id="score">分数：0</div>
+    </div>
+    <div id="game-area">
+        <div class="hole-row">
+            <div class="hole" id="hole1"></div>
+            <div class="hole" id="hole2"></div>
+            <div class="hole" id="hole3"></div>
+        </div>
+        <div class="hole-row">
+            <div class="hole" id="hole4"></div>
+            <div class="hole" id="hole5"></div>
+            <div class="hole" id="hole6"></div>
+        </div>
+        <div class="hole-row">
+            <div class="hole" id="hole7"></div>
+            <div class="hole" id="hole8"></div>
+            <div class="hole" id="hole9"></div>
+        </div>
+    </div>
+    <div id="start-btn-container">
+        <button id="start-btn">开始游戏</button>
+    </div>
+    <div id="reset-btn-container">
+        <button id="reset-btn">重置游戏</button>
+    </div>
+    <div id="game-over">游戏结束！最终得分：0</div>
+    <button id="developer-btn">开发者信息</button>
+
+    <script>
+        let timeLeft = 60;
+        let score = 0;
+        let health = 100;
+        let gameInterval;
+        let moleTimeout;
+        let lastHoleId;
+        let gameActive = false; // 游戏状态标识
+
+        function startGame() {
+            timeLeft = 60;
+            score = 0;
+            health = 100;
+            gameActive = true; // 设置游戏状态为活动
+            updateStatusBar();
+            document.getElementById("start-btn").disabled = true;
+            document.getElementById("game-over").style.display = "none"; // 隐藏游戏结束信息
+            gameInterval = setInterval(updateTime, 1000);
+            showMole();
+        }
+
+        function updateTime() {
+            timeLeft--;
+            updateStatusBar();
+            if (timeLeft <= 5) {
+                document.getElementById("time").style.color = "red";
+            }
+            if (timeLeft === 0) {
+                endGame();
+            }
+        }
+
+        function updateStatusBar() {
+            document.getElementById("time").innerText = "时间：" + formatTime(timeLeft);
+            document.getElementById("health").innerText = "生命值：" + health;
+            document.getElementById("score").innerText = "分数：" + score;
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        function showMole() {
+            const holes = document.getElementsByClassName("hole");
+            const randomHoleIndex = Math.floor(Math.random() * holes.length);
+            const randomHole = holes[randomHoleIndex];
+            if (randomHole.id !== lastHoleId) {
+                randomHole.style.backgroundColor = "#4A4A4A"; // 使用深色的16进制表示法
+                lastHoleId = randomHole.id;
+
+                // 创建地鼠元素
+                const mole = document.createElement("div");
+                mole.classList.add("mole");
+                randomHole.appendChild(mole);
+                mole.style.display = "block"; // 显示地鼠
+
+                moleTimeout = setTimeout(() => {
+                    randomHole.style.backgroundColor = "rgb(7, 46, 65)"; // 恢复原色
+                    mole.remove(); // 移除地鼠
+                    showMole(); // 继续显示下一个地鼠
+                }, 1000);
+            } else {
+                showMole(); // 如果是同一个洞，重新选择
+            }
+        }
+
+        function hitMole(event) {
+            if (!gameActive) return; // 如果游戏未激活，直接返回
+            if (event.target.classList.contains("hole") && event.target.style.backgroundColor === "rgb(74, 74, 74)") {
+                event.target.style.backgroundColor = "rgb(7, 46, 65)";
+                score += 10;
+                updateStatusBar();
+                const mole = event.target.querySelector(".mole");
+                if (mole) {
+                    mole.remove(); // 移除地鼠
+                }
+            } else {
+                health -= 10;
+                updateStatusBar();
+                if (health <= 0) {
+                    endGame();
+                }
+            }
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            clearTimeout(moleTimeout);
+            gameActive = false; // 设置游戏状态为不活动
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("game-over").style.display = "block";
+            document.getElementById("game-over").innerText = "游戏结束！最终得分：" + score;
+
+            // 移除所有地鼠
+            const holes = document.getElementsByClassName("hole");
+            for (let hole of holes) {
+                const mole = hole.querySelector(".mole");
+                if (mole) {
+                    mole.remove(); // 移除所有地鼠
+                }
+                hole.style.backgroundColor = "rgb(7, 46, 65)"; // 恢复所有洞的颜色
+            }
+        }
+
+        function resetGame() {
+            clearInterval(gameInterval);
+            clearTimeout(moleTimeout);
+            timeLeft = 60;
+            score = 0;
+            health = 100;
+            gameActive = false; // 重置游戏状态
+            updateStatusBar();
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("game-over").style.display = "none"; // 隐藏游戏结束信息
+            const holes = document.getElementsByClassName("hole");
+            for (let hole of holes) {
+                hole.style.backgroundColor = "rgb(7, 46, 65)"; // 恢复所有洞的颜色
+                const mole = hole.querySelector(".mole");
+                if (mole) {
+                    mole.remove(); // 移除所有地鼠
+                }
+            }
+        }
+
+        function showDeveloperInfo() {
+            alert("开发者：Lucas & Gary\n开发工具：VS Code\nInspire by MarsCode");
+        }
+
+        document.getElementById("start-btn").addEventListener("click", startGame);
+        document.getElementById("reset-btn").addEventListener("click", resetGame);
+        document.getElementById("developer-btn").addEventListener("click", showDeveloperInfo);
+        document.getElementById("game-area").addEventListener("click", hitMole);
+    </script>
+</body>
+</html>
